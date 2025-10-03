@@ -21,19 +21,23 @@ class Program
         OurServer.AddPrefix("http://localhost:11231/");
         OurServer.Start();
 
-       await OurServer.StopAsync();
+        //await OurServer.StopAsync();
 
 
+        while (OurServer.IsListening)
+        {
+
+        }
 
 
+        //using HttpListener server = new();
+        //server.Prefixes.Add("http://localhost:11231/");
+        //server.Start();
 
-        using HttpListener server = new();
-        server.Prefixes.Add("http://localhost:11231/");
-        server.Start();
+        //Console.WriteLine("Hello Word");
 
-         var context = await server.GetContextAsync();
+        //var context = await server.GetContextAsync();
 
-          Console.WriteLine("Hello Word");
 
         // ایجاد لیست افراد
         List<Person> people = new List<Person>
@@ -46,71 +50,71 @@ class Program
 
       
 
-        Console.WriteLine("سرور روی http://localhost:11231/ در حال اجرا است...");
-        Console.WriteLine("برای توقف، ENTER بزنید.");
+        //Console.WriteLine("سرور روی http://localhost:11231/ در حال اجرا است...");
+        //Console.WriteLine("برای توقف، ENTER بزنید.");
 
-        var cts = new CancellationTokenSource();
+        //var cts = new CancellationTokenSource();
 
-        // اجرای سرور به صورت غیرهمزمان
-        var serverTask = Task.Run(async () =>
-        {
-            while (!cts.Token.IsCancellationRequested)
-            {
-                try
-                {
-                    var context = await server.GetContextAsync();
-                    _ = Task.Run(() => HandleRequest(context, people));
-                }
-                catch (HttpListenerException)
-                {
-                    // سرور Stop شده → خروج از حلقه
-                    break;
-                }
-            }
-        });
+        //// اجرای سرور به صورت غیرهمزمان
+        //var serverTask = Task.Run(async () =>
+        //{
+        //    while (!cts.Token.IsCancellationRequested)
+        //    {
+        //        try
+        //        {
+        //            var context = await server.GetContextAsync();
+        //            _ = Task.Run(() => HandleRequest(context, people));
+        //        }
+        //        catch (HttpListenerException)
+        //        {
+        //            // سرور Stop شده → خروج از حلقه
+        //            break;
+        //        }
+        //    }
+        //});
 
-        // منتظر فشار دادن ENTER
-        Console.ReadLine();
-        cts.Cancel();
-        server.Stop();
-        server.Close();
-        Console.WriteLine("سرور متوقف شد.");
+        //// منتظر فشار دادن ENTER
+        //Console.ReadLine();
+        //cts.Cancel();
+        //server.Stop();
+        //server.Close();
+        //Console.WriteLine("سرور متوقف شد.");
 
-        await serverTask;
+        //await serverTask;
     }
 
-    private static async Task HandleRequest(HttpListenerContext context, List<Person> people)
-    {
-        var request = context.Request;
-        var response = context.Response;
+    //private static async Task HandleRequest(HttpListenerContext context, List<Person> people)
+    //{
+    //    var request = context.Request;
+    //    var response = context.Response;
 
-        if (request.Url.AbsolutePath == "/users")
-        {
-            // تبدیل لیست افراد به JSON
-            string json = JsonSerializer.Serialize(people);
+    //    if (request.Url.AbsolutePath == "/users")
+    //    {
+    //        // تبدیل لیست افراد به JSON
+    //        string json = JsonSerializer.Serialize(people);
 
-            byte[] buffer = Encoding.UTF8.GetBytes(json);
-            response.ContentType = "application/json";
-            response.ContentLength64 = buffer.Length;
+    //        byte[] buffer = Encoding.UTF8.GetBytes(json);
+    //        response.ContentType = "application/json";
+    //        response.ContentLength64 = buffer.Length;
 
-            await response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
-            response.OutputStream.Close();
+    //        await response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
+    //        response.OutputStream.Close();
 
-            Console.WriteLine("یک درخواست به /users دریافت شد ✅");
-        }
-        else
-        {
-            // اگر مسیر اشتباه بود
-            string message = "404 - Not Found";
-            byte[] buffer = Encoding.UTF8.GetBytes(message);
-            response.StatusCode = 404;
-            response.ContentType = "text/plain";
-            response.ContentLength64 = buffer.Length;
+    //        Console.WriteLine("یک درخواست به /users دریافت شد ✅");
+    //    }
+    //    else
+    //    {
+    //        // اگر مسیر اشتباه بود
+    //        string message = "404 - Not Found";
+    //        byte[] buffer = Encoding.UTF8.GetBytes(message);
+    //        response.StatusCode = 404;
+    //        response.ContentType = "text/plain";
+    //        response.ContentLength64 = buffer.Length;
 
-            await response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
-            response.OutputStream.Close();
+    //        await response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
+    //        response.OutputStream.Close();
 
-            Console.WriteLine("درخواست نامعتبر دریافت شد ❌");
-        }
-    }
+    //        Console.WriteLine("درخواست نامعتبر دریافت شد ❌");
+    //    }
+    //}
 }

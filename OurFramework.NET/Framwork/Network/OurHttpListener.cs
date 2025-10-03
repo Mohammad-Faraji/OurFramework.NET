@@ -42,6 +42,7 @@ namespace OurFramework.NET.Framwork.Network
             _tcp = new TcpListener(ipAddress, uri.Port);
             _tcp.Start();
 
+            _cts = new CancellationTokenSource();
 
             _acceptLoop = Task.Run(() => AcceptLoopAsync(_cts.Token));
         }
@@ -76,12 +77,27 @@ namespace OurFramework.NET.Framwork.Network
 
             while (!ct.IsCancellationRequested)
             {
+                TcpClient client = await _tcp.AcceptTcpClientAsync();
 
+                var stream = client.GetStream();
+                stream.ReadTimeout = 5000;
+                stream.WriteTimeout = 5000;
 
+                var httpContext = 
+
+                using var reader = new StreamReader(stream,Encoding.UTF8,leaveOpen:true,detectEncodingFromByteOrderMarks:false);
+
+                var readLine = await reader.ReadLineAsync();
 
 
             }
         }
     }
+
+}
+
+
+public class OurHttpListenerContext
+{
 
 }
