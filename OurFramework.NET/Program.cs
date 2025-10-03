@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using OurFramework.NET.Framwork.Network;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -16,6 +17,15 @@ class Program
 {
     static async Task Main(string[] args)
     {
+        var OurServer = new OurHttpListener();
+        OurServer.AddPrefix("http://localhost:11231/");
+        OurServer.Start();
+
+       await OurServer.StopAsync();
+
+
+
+
 
         using HttpListener server = new();
         server.Prefixes.Add("http://localhost:11231/");

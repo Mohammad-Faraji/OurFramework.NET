@@ -13,6 +13,7 @@ namespace OurFramework.NET.Framwork.Network
         private readonly List<string> _prefixes = [];
         private TcpListener? _tcp;
         private CancellationTokenSource? _cts;
+        private Task? _acceptLoop;
 
         public bool IsListening => _tcp != null;
 
@@ -42,21 +43,45 @@ namespace OurFramework.NET.Framwork.Network
             _tcp.Start();
 
 
-            _ = Task.Run(() => AcceptLoopAsync(_cts.Token));
+            _acceptLoop = Task.Run(() => AcceptLoopAsync(_cts.Token));
+        }
+
+        public async Task StopAsync()
+        {
+            if (_tcp == null) return;
+            _cts.Cancel();
+            _tcp.Stop();
+
+
+            if (_acceptLoop != null)
+            {
+                try
+                {
+                   await _acceptLoop.ConfigureAwait(false);
+                }
+                catch
+                {
+
+                  
+                }
+            }
+
+
+            _tcp = null;
         }
 
         private async Task AcceptLoopAsync(CancellationToken ct)
         {
             if (_tcp == null) return;
 
-            while (!ct.IsCancellationRequested) 
+            while (!ct.IsCancellationRequested)
             {
 
 
 
 
             }
+        }
     }
 
-    
 }
