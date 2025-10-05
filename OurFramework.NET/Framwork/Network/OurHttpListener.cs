@@ -58,12 +58,12 @@ namespace OurFramework.NET.Framwork.Network
             {
                 try
                 {
-                   await _acceptLoop.ConfigureAwait(false);
+                    await _acceptLoop.ConfigureAwait(false);
                 }
                 catch
                 {
 
-                  
+
                 }
             }
 
@@ -83,9 +83,9 @@ namespace OurFramework.NET.Framwork.Network
                 stream.ReadTimeout = 5000;
                 stream.WriteTimeout = 5000;
 
-                var httpContext = 
+                //var httpContext = 
 
-                using var reader = new StreamReader(stream,Encoding.UTF8,leaveOpen:true,detectEncodingFromByteOrderMarks:false);
+                using var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true, detectEncodingFromByteOrderMarks: false);
 
                 var readLine = await reader.ReadLineAsync();
 
@@ -99,5 +99,26 @@ namespace OurFramework.NET.Framwork.Network
 
 public class OurHttpListenerContext
 {
+    public OurHttpListenerRequest Request { get; set; }
+    public OurHttpListenerResponse Response { get; set; }
+}
+
+public class OurHttpListenerRequest
+{
+    public string HttpMethod { get; set; }
+    public string Path { get; set; }
+    public string Protocol { get; set; }
+    public IReadOnlyDictionary<string, string> Headers { get; set; }
+    public ReadOnlyMemory<byte> Body { get; set; }
+
+}
+
+public class OurHttpListenerResponse
+{
+    public string HttpMethod { get; set; }
+    public string Path { get; set; }
+    public string Protocol { get; set; }
+    public IReadOnlyDictionary<string, string> Headers { get; set; }
+    public ReadOnlyMemory<byte> Body { get; set; }
 
 }
