@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace OurFramework.NET.Framwork.Network
@@ -15,6 +16,8 @@ namespace OurFramework.NET.Framwork.Network
         private TcpListener? _tcp;
         private CancellationTokenSource? _cts;
         private Task? _acceptLoop;
+
+        private readonly Channel<OurHttpListenerContext> _poolContexts  = Channel.CreateUnbounded<OurHttpListenerContext>();
 
         public bool IsListening => _tcp != null;
 
@@ -84,7 +87,6 @@ namespace OurFramework.NET.Framwork.Network
                 stream.ReadTimeout = 5000;
                 stream.WriteTimeout = 5000;
 
-                var httpContext = new OurHttpListenerContext();
 
                 using var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true, detectEncodingFromByteOrderMarks: false);
 
@@ -130,11 +132,13 @@ namespace OurFramework.NET.Framwork.Network
 
                 string bodyText = bodyBytes != null ? Encoding.UTF8.GetString(bodyBytes) : string.Empty;
 
-                var request = new OurHttpListenerRequest(method ?? "GET",path ?? "/",protocol ?? "HTTP/1.1",headers
-                    , bodyBytes != null ?  new ReadOnlyMemory<byte>(bodyBytes) : ReadOnlyMemory<byte>.Empty)
-                {
+                var request = new OurHttpListenerRequest(method ?? "GET", path ?? "/", protocol ?? "HTTP/1.1", headers
+                    , bodyBytes != null ? new ReadOnlyMemory<byte>(bodyBytes) : ReadOnlyMemory<byte>.Empty);
 
-                };
+                var response = new OurHttpListenerResponse(stream);
+                var httpContext = new OurHttpListenerContext(request, response);
+
+              await _poolContexts.Writer.WriteAsync(httpContext);
             }
         }
     }
@@ -146,6 +150,11 @@ public class OurHttpListenerContext
 {
     public OurHttpListenerRequest Request { get; set; }
     public OurHttpListenerResponse Response { get; set; }
+    public OurHttpListenerContext(OurHttpListenerRequest request, OurHttpListenerResponse response)
+    {
+        request = request;
+        Response = response;
+    }
 }
 
 public class OurHttpListenerRequest
@@ -169,6 +178,12 @@ public class OurHttpListenerRequest
 
 public class OurHttpListenerResponse
 {
+    private readonly Stream _netWork;
+
+    public OurHttpListenerResponse(Stream netWork)
+    {
+        _netWork = netWork;
+    }
     //public string HttpMethod { get; set; }
     //public string Path { get; set; }
     //public string Protocol { get; set; }
