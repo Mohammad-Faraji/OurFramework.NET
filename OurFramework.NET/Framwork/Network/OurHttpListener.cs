@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Net.WebSockets;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -83,13 +84,57 @@ namespace OurFramework.NET.Framwork.Network
                 stream.ReadTimeout = 5000;
                 stream.WriteTimeout = 5000;
 
-                //var httpContext = 
+                var httpContext = new OurHttpListenerContext();
 
                 using var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true, detectEncodingFromByteOrderMarks: false);
 
-                var readLine = await reader.ReadLineAsync();
+                var requestLine = await reader.ReadLineAsync();
+
+                if (string.IsNullOrEmpty(requestLine)) continue;
+
+                var parts = requestLine?.Split(separator: ' ');
+                var method = parts?[0];
+                var path = parts?[1];
+                var protocol = parts?[2];
+
+                string line;
+                var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                while (!string.IsNullOrEmpty(line = await reader.ReadLineAsync().ConfigureAwait(false)))
+                {
+                    var idx = line.IndexOf(value: ':');
+                    if (idx <= 0) continue;
+
+                    var name = line[..idx].Trim();
+                    var value = line[(idx + 1)..].Trim();
+                    headers[name] = value;
 
 
+                }
+
+
+                byte[]? bodyBytes = null;
+                if (headers.TryGetValue("Content-Length", out var lenstr) &&
+                    int.TryParse(lenstr, out var len) && len > 0)
+                {
+                    bodyBytes = new byte[len];
+
+                    var read = 0;
+                    char[] buffer = new char[len];
+
+                    var chrsread = await reader.ReadBlockAsync(buffer, index: 0, len);
+                    bodyBytes = Encoding.UTF8.GetBytes(buffer, 0, chrsread);
+
+                    //await stream.ReadAsync(bodyBytes, offset: 0, contentLength, ct).ConfigureAwait(false);
+
+                }
+
+                string bodyText = bodyBytes != null ? Encoding.UTF8.GetString(bodyBytes) : string.Empty;
+
+                var request = new OurHttpListenerRequest(method ?? "GET",path ?? "/",protocol ?? "HTTP/1.1",headers
+                    , bodyBytes != null ?  new ReadOnlyMemory<byte>(bodyBytes) : ReadOnlyMemory<byte>.Empty)
+                {
+
+                };
             }
         }
     }
@@ -111,14 +156,23 @@ public class OurHttpListenerRequest
     public IReadOnlyDictionary<string, string> Headers { get; set; }
     public ReadOnlyMemory<byte> Body { get; set; }
 
+    public OurHttpListenerRequest(string httpMethod, string path,string protocol, IReadOnlyDictionary<string, string> headers, ReadOnlyMemory<byte> body)
+    {
+        HttpMethod = httpMethod;
+        Path = path;
+        Protocol = protocol;
+        Headers = headers;
+        Body = body;
+    }
+
 }
 
 public class OurHttpListenerResponse
 {
-    public string HttpMethod { get; set; }
-    public string Path { get; set; }
-    public string Protocol { get; set; }
-    public IReadOnlyDictionary<string, string> Headers { get; set; }
-    public ReadOnlyMemory<byte> Body { get; set; }
+    //public string HttpMethod { get; set; }
+    //public string Path { get; set; }
+    //public string Protocol { get; set; }
+    //public IReadOnlyDictionary<string, string> Headers { get; set; }
+    //public ReadOnlyMemory<byte> Body { get; set; }
 
 }
