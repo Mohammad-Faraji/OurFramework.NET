@@ -26,7 +26,22 @@ class Program
 
         while (OurServer.IsListening)
         {
+            try
+            {
+                var context = await OurServer.GetNewRequest();
 
+                Console.WriteLine(value: $"Recived request: {context.Request.HttpMethod} {context.Request.Path}");
+
+              await  context.Response.WriteAsync("Hello,World");
+
+                await context.Response.CloseAsync();
+
+            }
+            catch (Exception)
+            {
+
+                break;
+            }
         }
 
 

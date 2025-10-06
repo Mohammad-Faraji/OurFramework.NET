@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text;
@@ -17,7 +18,7 @@ namespace OurFramework.NET.Framwork.Network
         private CancellationTokenSource? _cts;
         private Task? _acceptLoop;
 
-        private readonly Channel<OurHttpListenerContext> _poolContexts  = Channel.CreateUnbounded<OurHttpListenerContext>();
+        private readonly Channel<OurHttpListenerContext> _poolContexts = Channel.CreateUnbounded<OurHttpListenerContext>();
 
         public bool IsListening => _tcp != null;
 
@@ -138,10 +139,18 @@ namespace OurFramework.NET.Framwork.Network
                 var response = new OurHttpListenerResponse(stream);
                 var httpContext = new OurHttpListenerContext(request, response);
 
-              await _poolContexts.Writer.WriteAsync(httpContext);
+                await _poolContexts.Writer.WriteAsync(httpContext);
             }
         }
+
+        internal  ValueTask<OurHttpListenerContext> GetNewRequest()
+        {
+          return   _poolContexts.Reader.ReadAsync();
+        }
     }
+
+
+
 
 }
 
@@ -174,16 +183,37 @@ public class OurHttpListenerRequest
         Body = body;
     }
 
+ 
 }
 
 public class OurHttpListenerResponse
 {
     private readonly Stream _netWork;
+    private bool _closed;
+
+    private readonly MemoryStream _buffer = new MemoryStream();
 
     public OurHttpListenerResponse(Stream netWork)
     {
         _netWork = netWork;
     }
+
+    public int StatusCode { get; internal set; }
+
+    internal async Task CloseAsync()
+    {
+      _closed = true;
+    }
+    internal void  WriteAsync(string response)
+    {
+        if (_closed)
+            throw new InvalidOperationException(message: "Resonse Already Closed");
+
+        var bytes = Encoding.UTF8.GetBytes(response);
+        _buffer.Write(bytes, 0, bytes.Length);
+    }
+
+
     //public string HttpMethod { get; set; }
     //public string Path { get; set; }
     //public string Protocol { get; set; }
